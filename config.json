@@ -1,0 +1,7 @@
+{
+    "LAST_IP_FILE": "last_ip.txt",
+    "CF_EMAIL": "your-email@example.com",
+    "CF_TOKEN": "your-cloudflare-api-token",
+    "CF_ZONE_NAME": "example.com",
+    "CF_DOMAIN_NAME": "sub.example.com"
+}
