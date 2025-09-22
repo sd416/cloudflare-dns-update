@@ -4,6 +4,19 @@ import time
 import sys
 import os
 
+# Configuration constants
+RETRY_COUNT = 5
+RETRY_DELAY = 3  # seconds
+DEFAULT_TTL = 300  # 5 minutes (recommended: 120-3600 seconds)
+
+# IP service providers (fallback options)
+IP_SERVICES = [
+    'https://api.ipify.org',
+    'https://icanhazip.com',
+    'https://ident.me',
+    'http://ip.xdty.org'
+]
+
 def load_config(config_file):
     if not os.path.isfile(config_file):
         print("ERROR, CONFIG NOT EXIST.")
@@ -22,15 +35,18 @@ def save_last_ip(last_ip_file, ip):
         f.write(ip)
 
 def get_current_ip():
-    for _ in range(5):
-        try:
-            response = requests.get('http://ip.xdty.org')
-            ip = response.text.strip()
-            if ip:
-                return ip
-        except requests.RequestException:
-            pass
-        time.sleep(3)
+    for service in IP_SERVICES:
+        for attempt in range(RETRY_COUNT):
+            try:
+                response = requests.get(service, timeout=10)
+                ip = response.text.strip()
+                if ip:
+                    return ip
+            except requests.RequestException:
+                if attempt < RETRY_COUNT - 1:
+                    time.sleep(RETRY_DELAY)
+                continue
+        # Try next service if current one fails
     return ""
 
 def get_zone_id(cf_email, cf_token, cf_zone_name):
@@ -66,7 +82,7 @@ def update_domain(cf_email, cf_token, cf_zone_id, cf_domain_id, cf_domain_name, 
         "type": "A",
         "name": cf_domain_name,
         "content": ip,
-        "ttl": 1,
+        "ttl": DEFAULT_TTL,
         "proxied": False
     }
     response = requests.put(url, headers=headers, json=data)
